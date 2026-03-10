@@ -28,7 +28,13 @@ Publisher ──► RabbitMQ (logs_queue) ──► NestJS Consumer ──► Mo
 
 ## Running with Docker (recommended)
 
-Spin up the consumer together with RabbitMQ and MongoDB in one command:
+The Docker Compose setup uses an **external** Docker network named `hris-network`. Create it once before the first run:
+
+```bash
+docker network create hris-network
+```
+
+Then spin up the consumer together with RabbitMQ and MongoDB:
 
 ```bash
 docker compose up --build
@@ -36,11 +42,12 @@ docker compose up --build
 
 Services exposed on your host:
 
-| Service | Port | Notes |
-|---------|------|-------|
-| RabbitMQ AMQP | `5672` | Used internally by the app |
-| RabbitMQ Management UI | `15672` | `guest` / `guest` |
-| MongoDB | `27017` | |
+| Service | Container | Port | Notes |
+|---------|-----------|------|-------|
+| RabbitMQ AMQP | `hris-rabbitmq` | `5672` | Used internally by the app |
+| RabbitMQ Management UI | `hris-rabbitmq` | `15672` | `guest` / `guest` |
+| MongoDB | `hris-mongodb` | `27017` | |
+| NestJS consumer | `hris-rabbitmq-consumer` | — | No HTTP port exposed |
 
 Stop and remove containers:
 
@@ -93,11 +100,25 @@ npm run test:cov
 
 ```
 src/
-├── app.module.ts        # Root module — wires Mongoose & consumer
-├── log.schema.ts        # Mongoose schema for Log documents
-├── logging.consumer.ts  # RabbitMQ event handler (@EventPattern)
-└── main.ts              # Bootstraps the RabbitMQ microservice
+├── app.module.ts           # Root module — wires Mongoose & consumer
+├── app.controller.ts       # Scaffold controller (unused by microservice)
+├── app.controller.spec.ts  # Unit tests for AppController
+├── app.service.ts          # Scaffold service (unused by microservice)
+├── log.schema.ts           # Mongoose schema for Log documents
+├── logging.consumer.ts     # RabbitMQ event handler (@EventPattern)
+└── main.ts                 # Bootstraps the RabbitMQ microservice
 ```
+
+## Data Model
+
+Log documents stored in MongoDB (`hris` database, `logs` collection):
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `message` | `string` (required) | Log message extracted from the event |
+| `payload` | `object` | Full raw event payload |
+| `createdAt` | `Date` | Auto-set by Mongoose timestamps |
+| `updatedAt` | `Date` | Auto-set by Mongoose timestamps |
 
 ## License
 
