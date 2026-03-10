@@ -14,24 +14,6 @@ services:
     networks:
       - hris-network
 
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: production
-    container_name: hris-rabbitmq-consumer
-    restart: unless-stopped
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
-      mongodb:
-        condition: service_healthy
-    environment:
-      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
-      MONGODB_URI: mongodb://mongodb:27017/hris
-    networks:
-      - hris-network
-
   mongodb:
     image: mongo:7-jammy
     container_name: hris-mongodb
@@ -48,9 +30,27 @@ services:
     networks:
       - hris-network
 
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: hris-rabbitmq-consumer
+    restart: unless-stopped
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+    environment:
+      RABBITMQ_URL: amqp://guest:guest@hris-rabbitmq:5672
+      MONGODB_URI: mongodb://hris-mongodb:27017/hris
+    networks:
+      - hris-network
+
 volumes:
   mongo-data:
 
 networks:
   hris-network:
-    driver: bridge
+    external: true
