@@ -1,4 +1,19 @@
 services:
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: hris-rabbitmq
+    restart: unless-stopped
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - hris-network
+
   app:
     build:
       context: .
@@ -7,9 +22,12 @@ services:
     container_name: hris-rabbitmq-consumer
     restart: unless-stopped
     depends_on:
+      rabbitmq:
+        condition: service_healthy
       mongodb:
         condition: service_healthy
     environment:
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
       MONGODB_URI: mongodb://mongodb:27017/hris
     networks:
       - hris-network
