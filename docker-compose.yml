@@ -1,0 +1,39 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: hris-rabbitmq-consumer
+    restart: unless-stopped
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    environment:
+      RABBITMQ_URL: amqp://guest:guest@host.docker.internal:5672
+      MONGODB_URI: mongodb://mongodb:27017/hris
+    networks:
+      - hris-network
+
+  mongodb:
+    image: mongo:7-jammy
+    container_name: hris-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - hris-network
+
+volumes:
+  mongo-data:
+
+networks:
+  hris-network:
+    driver: bridge
